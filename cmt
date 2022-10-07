@@ -1,0 +1,166 @@
+Help()
+{
+   # Display Help
+   echo "cmt.sh help: jeito Fácil e rápido de dar commit sem fazer merda"
+   echo
+   echo "Syntax: cmt.sh [options]"
+   echo "options:"
+   echo "-v     M  -> Commit como Major(mudança incompatível)"
+   echo "       m  -> Commit como Minor(Funcionalidade(s) adicionada) (default)"
+   echo "       p  -> Commit como Patch(Correção de Bugs)  "
+   echo "-b  -> Especifica Branch (default = develop)"
+}
+
+# Automatic Commit
+version_type="m";
+branch="develop"
+
+while getopts ":hv:b:" option; do
+   case $option in
+    h) # display Help
+        Help
+        exit;;
+    v)
+        version_type=$OPTARG;;
+    b)
+        branch=$OPTARG;;
+    \?) # Invalid option
+        echo "Opção Invalida, execute -h para acessar a documentação"
+        exit 1;;
+   esac
+done
+
+case $version_type in
+    M)
+        echo "Commit de versionamento Major";;
+    m)
+        echo "Commit de versionamento Minor";;
+    p)
+        echo "Commit de versionamento Patch";;
+    \?)
+        echo "Opção de versionamento Inválida, execute -h para acessar a documentação"
+        exit 1;;
+esac
+
+if !(git stash save) ; then
+    echo "Erro ao salvar stash"
+    exit exit 1
+fi
+
+if !(git checkout $branch) then
+    echo "Erro ao realizar troca de branch, retornando alterações em stash"
+    git stash apply
+    exit 1
+fi
+
+git stash apply
+
+ispy=`find ./ -type f -name *.py -print -quit`
+
+if [[ $ispy != "" ]];then
+    echo "identificados arquivos em python é sugerido utilização de venv"
+    if [[ $VIRTUAL_ENV != "" ]];then
+        att_request=1
+        echo "Foi Identificado ambiente virtual: $VIRTUAL_ENV."
+    else
+        d_venv=`find ./ -type f -name pyvenv.cfg -print -quit`
+        if [[ $d_venv != "" ]];then
+            att_request=0
+            read -p "Foi encontrado um ambiente virtual em ${d_venv::-10}, deseja executa-lo?(s-Sim)" option
+            if [ "$option" = "s" ]; then
+                if !(source $(find ${d_venv::-10} -type f -name "activate")) then
+                    echo "Falha ao entrar!"
+                    exit 1
+                else
+                    source $(find ${d_venv::-10} -type f -name "activate")
+                    att_request=1
+                    # pip freeze > requirements.txt
+                    # echo "requirements atualizado"
+                fi
+            else
+                echo "O que fazer?"
+                echo "(p: prosseguir sem atualizar requirements.txt"
+                echo " g: gravar bibliotecas do computador"
+                echo " q: abortar)"
+                read option
+                case $option in
+                p) att_request=0;;
+                g) att_request=1;;
+                q) exit 1;;
+                \?) echo "Opção Inválida"
+                    exit;;
+                esac
+            fi
+        else
+            echo "Não foi identificado ambiente virtual, o que fazer?"
+            echo "(p: prosseguir sem atualizar requirements.txt"
+            echo " g: gravar bibliotecas do computador"
+            echo " q: abortar)"
+            read option
+            case $option in
+                p) att_request=0;;
+                g) att_request=1;;
+                q) exit 1;;
+                \?) echo "Opção Inválida";;
+            esac
+        fi
+    fi
+    if (($att_request==1));then
+        pip freeze > requirements.txt
+        echo "requirements atualizado"
+    else
+        echo "requirements não atualizado"
+    fi
+fi
+
+fist_line=$(head -1 commit_comment.txt)
+IFS="." read Major_num Minor_num Patch_num <<< $fist_line
+Major_num=${Major_num:1}
+case $version_type in
+    M)
+        Major_num="$((10#$Major_num+1))"
+        Minor_num=0
+        Patch_num=0
+        ;;
+    m)
+        Minor_num="$((10#$Minor_num+1))"
+        Patch_num=0
+        ;;
+    p)
+        Patch_num="$((10#$Patch_num+1))"
+        ;;
+esac
+
+completestring="V${Major_num}.${Minor_num}.${Patch_num}"
+# echo $Major_num
+# echo $Minor_num
+# echo $Patch_num
+# echo ${completestring}
+sed -i "s/$(head -1 commit_comment.txt)/${completestring}/" commit_comment.txt
+
+git status
+
+echo "Certifique-se de conferir os arquivos a serem adidcionados."
+read -p "Enter para continuar | q para abortar" option
+if [ "$option" = "q" ]; then
+  exit 0
+fi
+
+
+code commit_comment.txt
+read -p "Pressione enter após conferir os comentários(q - Abortar commit)" option
+if [ "$option" = "q" ]; then
+  exit 0
+fi
+
+if !(git commit -a -F commit_comment.txt) then
+    echo "falha ao realizar commit"
+    exit 1
+fi
+
+sed -i '/::nopersist::/,/::persist::/{//!d}' commit_comment.txt
+sed -i '/^::nopersist::/a \ ' commit_comment.txt
+sed -i '/^::nopersist::/a -' commit_comment.txt
+sed -i '/^::nopersist::/a \ ' commit_comment.txt
+
+# git push

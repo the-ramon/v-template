@@ -1,0 +1,14 @@
+V0.0.0
+
+========================================
+Notas de Atualização:
+::nopersist::
+ 
+-
+ 
+::persist::
+========================================
+Modificações Futuras/Sugestões:
+
+-
+
