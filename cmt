@@ -146,21 +146,12 @@ if [ "$option" = "q" ]; then
   exit 0
 fi
 
-
-code commit_comment.txt
-read -p "Pressione enter após conferir os comentários(q - Abortar commit)" option
-if [ "$option" = "q" ]; then
-  exit 0
-fi
-
-if !(git commit -a -F commit_comment.txt) then
-    echo "falha ao realizar commit"
-    exit 1
-fi
+echo "Esperando fechar arquivo"
+code  --wait commit_comment.txt
 
 sed -i '/::nopersist::/,/::persist::/{//!d}' commit_comment.txt
 sed -i '/^::nopersist::/a \ ' commit_comment.txt
 sed -i '/^::nopersist::/a -' commit_comment.txt
 sed -i '/^::nopersist::/a \ ' commit_comment.txt
 
-# git push
+git push
