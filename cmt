@@ -149,9 +149,14 @@ fi
 echo "Esperando fechar arquivo"
 code  --wait commit_comment.txt
 
+if !(git commit -a -F commit_comment.txt) then
+    echo "falha ao realizar commit"
+    exit 1
+fi
+
 sed -i '/::nopersist::/,/::persist::/{//!d}' commit_comment.txt
 sed -i '/^::nopersist::/a \ ' commit_comment.txt
 sed -i '/^::nopersist::/a -' commit_comment.txt
 sed -i '/^::nopersist::/a \ ' commit_comment.txt
 
-git push
+#git push
