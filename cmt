@@ -42,18 +42,18 @@ case $version_type in
         exit 1;;
 esac
 
-if !(git stash save) ; then
-    echo "Erro ao salvar stash"
-    exit exit 1
-fi
+# if !(git stash save) ; then
+#     echo "Erro ao salvar stash"
+#     exit exit 1
+# fi
 
-if !(git checkout $branch) then
-    echo "Erro ao realizar troca de branch, retornando alterações em stash"
-    git stash apply
-    exit 1
-fi
+# if !(git checkout $branch) then
+#     echo "Erro ao realizar troca de branch, retornando alterações em stash"
+#     git stash apply
+#     exit 1
+# fi
 
-git stash apply
+# git stash apply
 
 ispy=`find ./ -type f -name *.py -print -quit`
 
